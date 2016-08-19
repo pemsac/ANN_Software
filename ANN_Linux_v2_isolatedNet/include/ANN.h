@@ -2,14 +2,18 @@
  *
  * Carlos III University of Madrid.
  *
- * Master Final Thesis: Heartbeat classifier based on ANN (Artificial Neural
+ * Master's Final Thesis: Heartbeats classifier based on ANN (Artificial Neural
  * Network).
+ *
+ * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
  * Tutor: Luis Mengibar Pozo (Tutor)
  *
  *
- * Feed-forward Artificial Neuronal Network.
+ * Feed-forward Artificial Neural Network with sigmoid & softmax activation
+ * functions.
+ *
  * Header file with the class definition.
  *
  *
@@ -24,74 +28,49 @@
 /*
  * Includes
  */
-#include <math.h>
-//#include <fstream>
-//
-//using namespace std;
+#include <cmath>
 
 /*
- * Feed-forward Artificial Neuronal Network class
+ * Feed-forward Artificial Neural Network class
  */
-class ANN{
-
+class ANN
+{
 protected:
   /*
    * Private variables:
-   * weight & output value of each neuron
-   * number of layers and of neurons in each one.
+   * _WandB:	 weights and bias of each neuron
+   * _out:	 output values of each neuron
+   * _numLayer:	 number of layers including input and output layers
+   * _layerSize: number of neurons in each layer.
    */
-  double ***_weight, **_output;
+  double ***_WandB, **_out;
   int _numLayer, *_layerSize;
 
-  //	squashing function
-
 public:
-
   /*
    * Main constructor method.
    *
-   * Create a new ANN setting:
-   * - number of layers, including input & output layers. (numLayer)
-   * - number of neurons in each layer (layerSize)
-   * - weights of each neuron connection.
+   * Create a new ANN introducing weights, number of layers and layers' sizes.
    */
-  ANN(int numLayer, int *layerSize, double ***weight);
-
-//  /*
-//   * method to load the ANN form a file.
-//   *
-//   * Similar than the main constructor, gets all data from a fstream
-//   * instance;
-//   */
-//  void load(const char *dir);
+  ANN(int numLayer, int *layerSize, double ***WandB);
 
   /*
-   * Destructor
+   * Virtual destructor to free all dynamic memory
    */
   virtual ~ANN();
 
   /*
-   * Process a new input and return a pointer to the result array
-   * (last layer outputs)
+   * Feed-forward process.
+   * The neurons have Sigmoid activation functions and Softmax output functions
    *
-   * Check Feedforward Artificial Neuronal Network's documentation for more
-   * information about the performance
+   * Check documentation to get more information
    */
   void feedforward(double *in);
-  /*
-   * Get the number of outputs & inputs (last layer size)
-   */
-//  int getNumOut() const {return _layerSize[_numLayer-1];}
-//  int getNumIn() const {return _layerSize[0];}
 
   /*
-   * Getters & Setters
+   * Getter for network's outputs (outputs of last layer's neurons)
    */
-  double getOut(int i) const{return _output[_numLayer-1][i];}
-//  int getNumLayer(){return _numLayer;}
-//  int getLayerSize(int i){return _layerSize[i];}
-//  double getOutput(int i, int j){return _output[i][j];}
-//  double getWeight(int i, int j, int k){return _weight[i][j][k];}
+  double getOut(int i) const{return _out[_numLayer-1][i];}
 };
 
 #endif

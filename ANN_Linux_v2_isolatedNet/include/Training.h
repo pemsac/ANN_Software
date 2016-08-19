@@ -2,22 +2,25 @@
  *
  * Carlos III University of Madrid.
  *
- * Master Final Thesis: Heartbeat classifier based on ANN (Artificial Neural
+ * Master's Final Thesis: Heartbeats classifier based on ANN (Artificial Neural
  * Network).
+ *
+ * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
  * Tutor: Luis Mengibar Pozo (Tutor)
  *
  *
- * Back-propagation training for feedforward ANN
- * Header file
+ * Back-propagation training for feed-forward ANN with momentum & gradient
+ * descent optimization algorithm
+ *
+ * Header file with class definition
+ * This class is derived from ANN class in order to get access to all the
+ * network during the train.
  *
  *
  */
 
-/*
- * Training mode check
- */
 
 /*
  * Header guard
@@ -31,31 +34,36 @@
 #include "ANN.h"
 #include <stdlib.h>
 #include <time.h>
+
 /*
- * Back-propagation training class
- * This class is derived from ANN class
+ * Back-propagation training class derived from ANN class
  */
 class Training : public ANN
 {
 private:
   /*
    * Private variables:
-   *
-   * The training needs some parameters such a learning Rate and a momentum.
-   *
-   * On the other hand, the training needs to save information about the last
-   * neurons' weights used (_prevWeight) and their Delta Error (deltaErr)
-   *
-   * This class is derived from ANN class to be able to create an ANN object
-   * with access to all its protected variables.
+   * _learnRate:	parameter of gradient descent algorithm
+   * _momentum:		parameter to stabilize the training  (optional)
+   * _preWandB:		previous weights & bias of a neuron after adjusting them
+   * _deltaErr:		delta error of each neuron
+   * _randWandB:	random weights & bias to initialize a new ANN base.
    */
-  double **_deltaErr, ***_prevWeight, _learnRate, _momentum, ***_randWeight;
+  double _learnRate, _momentum, ***_preWandB, **_deltaErr, ***_randWandB;
 
   /*
-   * Private function to create an weights matrix with random values. This is
-   * used to initialized a new ANN before training it.
+   * Private function to initialize and return the _randWandB matrix with
+   * random weights and bias values. It's used to initialize the ANN base object
+   *
+   * In order to keep a good use of memory resources, the memory allocated by
+   * _randWan
    */
-  double ***randWeight(int numLayer, int *layerSize);
+  double ***randWandB(int numLayer, int *layerSize);
+
+  /*
+   * In order to keep a good use of memory resources, the _randWandB memory
+   * allocated should be released after using randWandB function
+   */
   void freeRandWeight(int numLayer, int *layerSize);
 
 public:
@@ -63,72 +71,37 @@ public:
   /*
    * Constructor method for new ANN
    *
-   * It initializes an own ANN with initial random weights.
+   * It initializes the ANN base object with random weights.
    * Other ANN parameters must be set:
    * - number of layers, including input & output layers. (numLayer)
    * - number of neurons in each layer (layerSize)
-   *
-   * The training parameters are:
-   * - momentum for the training (momentum).
-   * - learning rate (learnRate)
+   * The training parameters to be introduced are the momentum (optional) and
+   * the learning rate.
    */
   Training(int numLayer, int *layerSize, double momentum,
-           double learnRate);
+	   double learnRate);
 
   /*
-   * Constructor method to train again and improve an existing ANN
-   *
-   * It retrains a provided ANN. These parameters must be set:
-   * - The said ANN parameters to be copied (numLayer, layerSize & weight)
-   * - momentum for the training (OPTIONAL)
-   * - learning rate (learnRate)
-   */
-//  Training(int numLayer, int *layerSize, double ***weight, double momentum,
-//           double learnRate);
-
-  /*
-   * Destructor
+   * Virtual destructor to free all dynamic memory (including ANN base)
    */
   virtual ~Training();
 
   /*
-   * Training method.
+   * Back-propagation training method.
    *
-   * The training is performed introducing a Matrix (trainMat) with possible
-   * inputs beside their expected outputs. The matrix format must be:
-   * ( In  , In  , ... , ... , Out , Out )
-   * ( In  , In  , ... , ... , Out , Out )
-   * ( ... , ... , ... , ... , ... , ... )
+   * The training is performed introducing an array of inputs (in) and their
    *
-   * where numInputs is the number of rows.
-   *
-   * The training goal is to achieve the desired ANN Squared Error defined in
-   * maxSquareErr, but it must be limited to a maximum number of interactions
-   * (maxInter)
-   *
-   * Check Back-Propagation training's documentation for more information
-   * about the performance
+   * *******LACK OF COMMENTS
    */
-  void backpropagation(double *in,double *tgt);
+  void backpropagation(double *in,double *target);
 
   /*
-   *  function to calculate the current square error while training
+   * Method to get the current Mean Squared Error
+   *
+   * *********** LACK OF COMMENTS
    */
-  double mse(double *in) const;
-
-  //  /*
-  //   * Function to save the just trained ANN to a binary file.
-  //   */
-  //  void saveToFile(fstream &fAnn);
-
-  /*
-   * ANN Getters
-   */
-//  int getNumLayer () const   {return _numLayer;}
-//
-//  int getLayerSize (int i) const {return _layerSize[i];}
-//
-//  double getWeight (int i, int j, int k) const   {return _weight[i][j][k];}
+  //  double squareErr(double *target) const;
+  double netErr(double *target) const;
 };
 
 #endif

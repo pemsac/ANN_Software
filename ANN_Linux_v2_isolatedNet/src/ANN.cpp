@@ -2,241 +2,195 @@
  *
  * Carlos III University of Madrid.
  *
- * Master Final Thesis: Heartbeat classifier based on ANN (Artificial Neural
+ * Master's Final Thesis: Heartbeats classifier based on ANN (Artificial Neural
  * Network).
+ *
+ * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
  * Tutor: Luis Mengibar Pozo (Tutor)
  *
  *
- * Feed-forward Artificial Neuronal Network.
- * Source file
+ * Feed-forward Artificial Neural Network.
+ *
+ * Source code
  *
  *
  */
 
 #include "ANN.h"
 
-ANN::ANN(int numLayer, int *layerSize, double ***weight)
+
+
+ANN::ANN(int numLayer, int *layerSize, double ***WandB)
 {
-	int i, j, k;
-	/*
-	 * memory allocation and data copy
-	 * Take into account the first layer's neurons (input) don't have weights
-	 *
-	 * number of layers
-	 */
-	_numLayer = numLayer;
+  int i, j, k;
+  /*
+   * memory allocation and data copy.
+   *
+   * number of layers
+   */
+  _numLayer = numLayer;
 
-	/*
-	 * Layer sizes
-	 */
-	_layerSize = new int[numLayer];
+  /*
+   * Layer sizes
+   */
+  _layerSize = new int[numLayer];
 
-	for (i=0; i<numLayer; ++i)
-	{
-		_layerSize[i] = layerSize[i];
-	}
+  for (i=0; i<numLayer; ++i)
+    {
+      _layerSize[i] = layerSize[i];
+    }
 
-	/*
-	 * output matrix (only allocation)
-	 */
-	_output = new double*[numLayer];
-	for (i=0; i<numLayer; ++i)
-	{
-		_output[i] = new double[layerSize[i]];
-	}
+  /*
+   * output matrix (only memory allocation)
+   */
+  _out = new double*[numLayer];
 
-	/*
-	 * Weights matrix
-	 * Note there are an extra weight per euron
-	 */
-	_weight = new double**[numLayer];
-	for (i=1; i<numLayer; ++i)
-	{
-		_weight[i] = new double*[layerSize[i]];
-	}
-	for (i=1; i<numLayer; ++i)
-	{
-		for (j=0; j<layerSize[i]; ++j)
-		{
-			_weight[i][j] = new double[layerSize[i-1]+1];
-		}
-	}
+  for (i=0; i<numLayer; ++i)
+    {
+      _out[i] = new double[layerSize[i]];
+    }
 
-	for (i=1; i<numLayer; ++i)
+  /*
+   * Weights and bias matrix
+   * Take into account the first layer's neurons (input) don't have weights.
+   * Note the neurons have a weight for each previous neuron connected plus an
+   * extra weight for its bias.
+   */
+  _WandB = new double**[numLayer];
+
+  for (i=1; i<numLayer; ++i)
+    {
+      _WandB[i] = new double*[layerSize[i]];
+    }
+  for (i=1; i<numLayer; ++i)
+    {
+      for (j=0; j<layerSize[i]; ++j)
 	{
-		for (j=0; j<layerSize[i]; ++j)
-		{
-			for (k=0; k<layerSize[i-1]+1; ++k)
-			{
-				_weight[i][j][k] = weight[i][j][k];
-			}
-		}
+	  _WandB[i][j] = new double[layerSize[i-1]+1];
 	}
+    }
+  for (i=1; i<numLayer; ++i)
+    {
+      for (j=0; j<layerSize[i]; ++j)
+	{
+	  for (k=0; k<layerSize[i-1]+1; ++k)
+	    {
+	      _WandB[i][j][k] = WandB[i][j][k];
+	    }
+	}
+    }
 }
-
 
 
 
 ANN::~ANN()
 {
-	int i, j;
-	/*
-	 * Free all dynamic memory
-	 */
-	for(i=1; i<_numLayer; ++i)
+  int i, j;
+  /*
+   * Free all dynamic memory
+   *
+   * weights and bias matrix
+   */
+  for(i=1; i<_numLayer; ++i)
+    {
+      for(j=0; j<_layerSize[i]; ++j)
 	{
-		for(j=0; j<_layerSize[i]; ++j)
-		{
-			delete[] _weight[i][j];
-		}
+	  delete[] _WandB[i][j];
 	}
-	for(i=1; i<_numLayer; ++i)
-	{
-		delete[] _weight[i];
-	}
-	delete[] _weight;
+    }
+  for(i=1; i<_numLayer; ++i)
+    {
+      delete[] _WandB[i];
+    }
+  delete[] _WandB;
 
-	for(i=0; i<_numLayer; ++i)
-	{
-		delete[] _output[i];
-	}
-	delete[] _output;
+  /*
+   * output matrix
+   */
+  for(i=0; i<_numLayer; ++i)
+    {
+      delete[] _out[i];
+    }
+  delete[] _out;
 
-	delete[] _layerSize;
+  /*
+   * layer sizes matrix
+   */
+  delete[] _layerSize;
 }
-
-
-
-//void ANN::load(const char *dir)
-//{
-//  int i, j, k;
-//  fstream fAnn;
-//
-//  /*
-//   * Open ANN file
-//   */
-//  try
-//  {
-//      fAnn.open(dir, fstream::in);
-//      fAnn.seekg(0, ios::beg);
-//  }
-//  catch(exception e)
-//  {
-//      string msg("Impossible to open ANN file :");
-//      msg.append(e.what());
-//      throw msg;
-//  }
-//
-//  /*
-//   * memory allocation and data copy
-//   * Take into account the first layer's neurons (input) don't have weights
-//   */
-//  try
-//  {
-//      /*
-//       * number of layers
-//       */
-//      fAnn>>_numLayer;
-//
-//      /*
-//       * Layer sizes
-//       */
-//      _layerSize = new int[_numLayer];
-//
-//      for (i=0; i<_numLayer; ++i)
-//	fAnn>>_layerSize[i];
-//
-//      /*
-//       * output matrix (only allocation)
-//       */
-//      _output = new double*[_numLayer];
-//      for (i=0; i<_numLayer; ++i)
-//	_output[i] = new double[_layerSize[i]];
-//
-//      /*
-//       * weights matrix
-//       */
-//      _weight = new double**[_numLayer];
-//      for (i=1; i<_numLayer; ++i)
-//	_weight[i] = new double*[_layerSize[i]];
-//      for (i=1; i<_numLayer; ++i)
-//	for (j=0; j<_layerSize[i]; ++j)
-//	  _weight[i][j] = new double[_layerSize[i-1]+1];
-//
-//      for (i=1; i<_numLayer; ++i)
-//	for (j=0; j<_layerSize[i]; ++j)
-//	  for (k=0; k<_layerSize[i-1]+1; ++k)
-//	    fAnn >>_weight[i][j][k];
-//  }
-//  catch(exception e)
-//  {
-//      string msg("Fail reading ANN file :");
-//      msg.append(e.what());
-//      throw msg;
-//  }
-//  /*
-//   * Close the file
-//   */
-//  try
-//  {
-//      fAnn.close();
-//  }
-//  catch(exception e)
-//  {
-//      string msg("Fail closing ANN file :");
-//      msg.append(e.what());
-//      throw msg;
-//  }
-//}
 
 
 
 void ANN::feedforward(double *in)
 {
-	double sum, sumsoft;
-	int i, j, k;
+  double sum, sumsoft;
+  int i, j, k;
 
-	//	assign content to input layer
-	for(i=0;i<_layerSize[0];++i)
-	{
-		_output[0][i]=in[i];  // output_from_neuron(i,j) Jth neuron in Ith Layer
-	}
+  /*
+   * Assign content to input layer
+   */
+  for(i=0;i<_layerSize[0];++i)
+    {
+      _out[0][i]=in[i];
+    }
 
-	//	assign output(activation) value
-	//	to each neuron usng sigmoid func
-	for(i=1;i<_numLayer-1;++i)
-	{				// For each layer
-		for(j=0;j<_layerSize[i];++j)
-		{		// For each neuron in current layer
-			sum=0.0;
-			for(k=0;k<_layerSize[i-1];++k)
-			{		// For input from each neuron in preceeding layer
-				sum+= _output[i-1][k]*_weight[i][j][k];	// Apply weight to inputs and add to sum
-			}
-			sum+=_weight[i][j][_layerSize[i-1]];		// Apply bias
-			_output[i][j]=1/(1+exp(-sum));			// Apply sigmoid function
-		}
-	}
-	/*
-	 * Softmax for output neurons
-	 */
-	sumsoft=0.0;
-	for(i=0; i<_layerSize[_numLayer-1]; ++i)
+  /*
+   * 1º process: Hidden layers of neurons.
+   * Get the outputs of each neuron in the hidden layers applying
+   * sigmoid activation function
+   */
+  for(i=1;i<_numLayer-1;++i)
+    {
+      for(j=0;j<_layerSize[i];++j)
 	{
-		sum=0.0;
-		for(j=0;j<_layerSize[_numLayer-2];++j)
-		{		// For input from each neuron in preceeding layer
-			sum += _output[_numLayer-2][j] * _weight[_numLayer-1][i][j];	// Apply weight to inputs and add to sum
-		}
-		sum += _weight[_numLayer-1][i][_layerSize[_numLayer-2]];
+	  /*
+	   * Sum all the neuron inputs applying weights
+	   */
+	  sum=0.0;
+	  for(k=0;k<_layerSize[i-1];++k)
+	    {
+	      sum+= _out[i-1][k]*_WandB[i][j][k];
+	    }
+	  /*
+	   * Apply bias
+	   */
+	  sum+=_WandB[i][j][_layerSize[i-1]];
+	  /*
+	   * SIGMOID activation function
+	   */
+	  _out[i][j]=1/(1+exp(-sum));
+	}
+    }
 
-		_output[_numLayer-1][i] = exp(sum);
-		sumsoft += _output[_numLayer-1][i];
-	}
-	for(i=0; i<_layerSize[_numLayer-1]; ++i)
+  /*
+   * 2º process: Output layer
+   * Get the outputs of the network applying softmax activation function
+   */
+  sumsoft=0.0;
+  for(i=0; i<_layerSize[_numLayer-1]; ++i)
+    {
+      /*
+       * Sum all the neuron inputs applying weights
+       */
+      sum=0.0;
+      for(j=0;j<_layerSize[_numLayer-2];++j)
 	{
-		_output[_numLayer-1][i] /= sumsoft;
+	  sum += _out[_numLayer-2][j] * _WandB[_numLayer-1][i][j];
 	}
+      /*
+       * Apply bias
+       */
+      sum += _WandB[_numLayer-1][i][_layerSize[_numLayer-2]];
+      /*
+       * SOFTMAX activation function
+       */
+      _out[_numLayer-1][i] = exp(sum);
+      sumsoft += _out[_numLayer-1][i];
+    }
+  for(i=0; i<_layerSize[_numLayer-1]; ++i)
+    {
+      _out[_numLayer-1][i] /= sumsoft;
+    }
 }
