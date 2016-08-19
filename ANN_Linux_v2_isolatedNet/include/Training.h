@@ -29,11 +29,13 @@
 #define TRAINING_H_
 
 /*
- * Includes
+ * Includes & namespace
  */
 #include "ANN.h"
 #include <stdlib.h>
 #include <time.h>
+
+using namespace std;
 
 /*
  * Back-propagation training class derived from ANN class

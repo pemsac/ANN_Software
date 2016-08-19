@@ -20,8 +20,7 @@
 
 #include "Training.h"
 
-#include <iostream>
-using namespace std;
+
 
 Training::Training(int numLayer, int *layerSize, double momentum,
 		   double learnRate) :
