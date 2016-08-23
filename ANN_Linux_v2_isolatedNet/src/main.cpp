@@ -22,18 +22,19 @@
 
 
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
   int i,j, k, numLayer, *layerSize, numRowTrain, numRowVal, numRowTest, numRow,
-  ite, maxIte, *netOut, numOut, *goodOut, *badOut;
-  double **dIn, **dTarget, mcee, lastMcee, thMcee, *maxIn, *minIn;
+  ite, maxIte, minIte, *netOut, numOut, *goodOut, *badOut;
+  double **dIn, **dTarget, mcee, minMcee, lastMcee, thMcee, *maxIn, *minIn;
   bool bad;
   fstream fAnn, fTarget, fIn, fTrain;
 
+
   /*
-   * Open files and check errors
+   * Open configuration and data files
    */
-  cout<<"Loading data from... "<<flush;
+  cout<<"Loading data... "<<flush;
   try
   {
       fAnn.open(ANN_FILE_DIR, fstream::in);
@@ -45,87 +46,143 @@ int main(int argc, char* argv[])
       fTrain.open(TRAIN_FILE_DIR, fstream::in);
       fTrain.seekg(0, ios::beg);
   }
-  catch (exception &e)
+  catch (fstream::failure &e)
   {
       cerr<<endl<<"Error opening some file:"<<endl;
-      cerr<<e.what()<<endl<<endl;
+      cerr<<e.what()<<endl;
       return 1;
   }
 
+
   /*
-   * Load ANN data such as number of layers and layers' sizes. Allocate memory
+   * ANN configuration
+   *
+   * Load ANN parameters such as number of layers and layers' sizes from their
+   * file. Allocate required memory to save these data and other variables
+   *
+   * Check documentation for more information about file format
    */
-  cout<<"ANN configuration file... "<<flush;
   try
   {
+      /*
+       * Load Number of Layers
+       */
       fAnn>>numLayer;
 
+      /*
+       * Allocate Layers Sizes Array and load them
+       */
       layerSize = new int[numLayer];
 
-      for (i=0; i<numLayer; i++)
+      for (i=0; i<numLayer; ++i)
 	{
 	  fAnn>>layerSize[i];
 	}
 
+      /*
+       * Get number of network outputs
+       */
       numOut = layerSize[numLayer-1];
 
-      netOut = new int[numOut];
+      /*
+       * Allocate Binary Network Output Array and initialize it to 0
+       */
+      netOut = new int[numOut]();
 
-      maxIn = new double[layerSize[0]];
-      minIn = new double[layerSize[0]];
-
+      /*
+       * Allocate and initialize to 0 statistical variables of ANN test
+       */
       goodOut = new int[numOut]();
       badOut = new int[numOut]();
 
-      for(i=0; i<layerSize[0]; i++)
+      /*
+       * Allocate and initialize input coding variables
+       */
+      maxIn = new double[layerSize[0]];
+      minIn = new double[layerSize[0]];
+      for(i=0; i<layerSize[0]; ++i)
 	{
 	  maxIn[i] = CODEC_MIN;
 	  minIn[i] = CODEC_MAX;
 	}
 
+      /*
+       * Close file
+       */
       fAnn.close();
+  }
+  catch(fstream::failure &e)
+  {
+      cerr<<endl<<"Error reading ANN configuration file:"<<endl;
+      cerr<<e.what()<<endl;
+      return 1;
   }
   catch (exception &e)
   {
-      cerr<<endl<<"Error reading ANN configuration file:"<<endl;
-      cerr<<e.what()<<endl<<endl;
+      cerr<<endl<<"Error setting up ANN:"<<endl;
+      cerr<<e.what()<<endl;
+      cerr<<"Are all parameters correct?"<<endl;
       return 1;
   }
 
+
   /*
-   * Load the training configuration.
+   * Training configuration
+   *
+   * Load training parameters such as threshold mcee or max iterations.
+   *
+   * Check documentation for more information about file format
    */
   try
   {
+      /*
+       * Load training parameters
+       */
       fTrain>>thMcee>>maxIte>>numRowTrain>>numRowVal>>numRowTest;
+
+      /*
+       * Calculate number of total samples
+       */
       numRow = numRowTrain + numRowVal + numRowTest;
+
+      /*
+       * Close the file
+       */
+      fTrain.close();
   }
-  catch (exception &e)
+  catch (fstream::failure &e)
   {
       cerr<<endl<<"Error reading training configuration file:"<<endl;
       cerr<<e.what()<<endl<<endl;
       return 1;
   }
-  fTrain.close();
-
 
 
   /*
-   * Load the input data for the network. Get the number of entries and allocate
-   * memory
+   * Input data
+   *
+   * Load the input data for the network and find maximum and minimum values of
+   * each type of input to codify all data later
+   *
+   * Check documentation for more information about file format
    */
-  cout<<"network's inputs file... "<<flush;
   try
   {
+      /*
+       * Allocate input buffer
+       */
       dIn = new double*[numRow];
-      for(i=0; i<numRow; i++)
+      for(i=0; i<numRow; ++i)
 	{
 	  dIn[i] = new double[layerSize[0]];
 	}
 
-      for(i=0; i<numRow; i++)
+      /*
+       * Load all data and find maximums and minimums
+       */
+      for(i=0; i<numRow; ++i)
 	{
-	  for(j=0; j<layerSize[0]; j++)
+	  for(j=0; j<layerSize[0]; ++j)
 	    {
 	      fIn>>dIn[i][j];
 
@@ -139,6 +196,10 @@ int main(int argc, char* argv[])
 		}
 	    }
 	}
+
+      /*
+       * CLose file
+       */
       fIn.close();
   }
   catch (exception &e)
@@ -148,26 +209,39 @@ int main(int argc, char* argv[])
       return 1;
   }
 
+
   /*
-   * Load the target data (ideal outputs for the previous entries). Check if the
-   * number of these entries is the same of the inputs.
+   * Target data
+   *
+   * Load the target outputs of each input sample data
+   *
+   * Check documentation for more information about file format
    */
-  cout<<"network's target file... "<<flush;
   try
   {
+      /*
+       * Allocate target buffer
+       */
       dTarget = new double*[numRow];
-      for(i=0; i<numRow; i++)
+      for(i=0; i<numRow; ++i)
 	{
 	  dTarget[i] = new double[numOut];
 	}
 
-      for(i=0; i<numRow; i++)
+      /*
+       * Load all data
+       */
+      for(i=0; i<numRow; ++i)
 	{
-	  for(j=0; j<numOut; j++)
+	  for(j=0; j<numOut; ++j)
 	    {
 	      fTarget>>dTarget[i][j];
 	    }
 	}
+
+      /*
+       * Close file
+       */
       fTarget.close();
   }
   catch (exception &e)
@@ -177,86 +251,153 @@ int main(int argc, char* argv[])
       return 1;
   }
 
-  /*
-   * Codify the inputs
-   */
-  cout<<"Coding entries..."<<flush;
+  cout<<"DONE!"<<endl;
 
-  for(i=0; i<layerSize[0]; i++)
+
+  /*
+   * Codify the inputs data and normalize all of them to 1.
+   *
+   * Check documentation for more information
+   */
+  cout<<"Coding input data..."<<flush;
+  for(i=0; i<layerSize[0]; ++i)
     {
+      /*
+       * Calculate Slope
+       */
       double a = (CODEC_MAX-CODEC_MIN)/(maxIn[i]-minIn[i]);
+
+      /*
+       * Calculate y-intercept
+       */
       double b = CODEC_MIN - a*minIn[i];
-      for(j=0; j<numRow; j++)
+
+      /*
+       * Apply the Straight Line equation to this type of input data
+       */
+      for(j=0; j<numRow; ++j)
 	{
 	  dIn[j][i] = dIn[j][i]*a + b;
 	}
     }
+  /*
+   * Free coding variables memory.
+   */
   delete[] maxIn;
   delete[] minIn;
 
-  cout<<"OK!"<<endl<<"Now, a new ANN will be trained..."<<endl;
+  cout<<"DONE!"<<endl;
 
   /*
    * Create the Training instance (It will create an own ANN to be trained)
    */
+  cout<<"Training a new feed-forward Neural Network..."<<flush;
   Training *trainIns = new Training(numLayer, layerSize);
 
   /*
-   * Training process:
+   * TRAINING PROCESS:
+   *
+   * Main steps summary:
+   * 1- Back-propagation
+   * 2- Validation
+   * 3- Results check
+   * 4- Update training parameters
    */
   ite=0;
+  minIte=0;
+  minMcee=999;
   lastMcee=999;
   while(1)
     {
-      ++ite;
       /*
-       * Apply blackpropagation for each training sample
+       * iterations counter
+       */
+      ++ite;
+
+      /*
+       * 1º Step. Back-propagation
+       *
+       * Apply Back-propagation with each training sample
        */
       for(i=0; i<numRowTrain; ++i)
 	{
 	  trainIns->backpropagation(dIn[i], dTarget[i]);
 	}
+
       /*
-       * Calculate the Network Error with the validation samples and print it
+       * 2º Step. Validation
+       *
+       * Validate the training. Calculate the Mean Cross Entropy Error (MCEE)
+       * with some validation samples.
        */
-      for(i=numRowTrain, mcee=0; i<numRowTrain+numRowVal; i++)
+      for(i=numRowTrain, mcee=0; i<numRowTrain+numRowVal; ++i)
 	{
 	  trainIns->feedforward(dIn[i]);
 	  mcee+=trainIns->CEE(dTarget[i]);
-	  trainIns->getNetOut(netOut);
 	}
       mcee /= numRowVal;
-      cout<<"VALIDATION: MCEE = "<<mcee<<endl;
+
       /*
-       * Check if minimum error or maximum iterations are achieved
+       * Save the lower MCEE achieved
+       */
+      if(mcee<minMcee)
+	{
+	  minMcee = mcee;
+	  minIte = ite;
+	}
+
+      /*
+       * 3º Step: Results check
+       *
+       * Check if minimum MCEE or maximum iterations are achieved and stop
+       * training if someone is. Print the result after finishing training.
+       *
        */
       if(mcee<=thMcee)
 	{
-	  cout<<"DONE!"<<endl;
+	  cout<<"DONE!"<<endl
+	      <<endl<<"Threshold Mean Cross Entropy Error achieved in "<<ite
+	      <<" iterations"<<endl
+	      <<"Validation MCEE = "<<mcee<<endl<<endl;
 	  break;
 	}
       if(ite>=maxIte)
 	{
-	  cout<<"WARNING Target error wasn't achieved"<<endl;
+	  cout<<"DONE!"<<endl<<endl
+	      <<"WARNING: Threshold Mean Cross Entropy Error not achieved"<<endl
+	      <<"Minimum Validation MCEE found at iteration No "<<minIte
+	      <<" with a value of "<<minMcee<<endl
+	      <<"Validation MCEE = "<<mcee<<endl<<endl;
 	  break;
 	}
+
+      /*
+       * 4º Step: Update training parameters
+       *
+       * If the training runs again, update the Learning Rate and Momentum
+       */
       trainIns->updateLRandM(mcee,lastMcee);
       lastMcee=mcee;
     }
 
   /*
-   * Run a test and print the error gotten
+   * TESTING PROCESS
    */
-
-  cout<<endl<<"Testing..."<<endl;
-
-  for(i=numRowTrain+numRowVal, ite=0, mcee=0, k=0; i<numRow; i++)
+  cout<<"Testing ANN..."<<flush;
+  for(i=numRowTrain+numRowVal, ite=0, mcee=0, k=0; i<numRow; ++i)
     {
-      ite++;
+      /*
+       * iteration counter
+       */
+      ++ite;
+
+      /*
+       * Feed-forward sample
+       */
       trainIns->feedforward(dIn[i]);
 
       /*
-       * Verify the result
+       * Check the type of output and correctness
        */
       trainIns->getNetOut(netOut);
       for(j=0, bad=false; j<numOut; ++j)
@@ -270,6 +411,10 @@ int main(int argc, char* argv[])
 	      k=j;
 	    }
 	}
+
+      /*
+       * Count bad and good results.
+       */
       if(bad)
 	{
 	  badOut[k]++;
@@ -280,39 +425,40 @@ int main(int argc, char* argv[])
 	}
 
       /*
-       * Sum the error to calculate the mean
+       * Calculate MCEE of all the test
        */
       mcee+=trainIns->CEE(dTarget[i]);
     }
   mcee = mcee/numRowTest;
-  cout<<"TEST DONE Results:"<<endl;
-  cout<<"MCEE = "<<mcee<<endl;
-  for(i=0; i<numOut; ++i)
-    {
-      cout<<"Outputs "<<i<<" Good = "<<goodOut[i]<<" Bad = "<<badOut[i]<<endl;
-    }
 
   /*
-   * Free all dynamic memory
+   * Print the test results
    */
+  cout<<"DONE!"<<endl<<endl;
+  for(i=0; i<numOut; ++i)
+    {
+      cout<<"Results of output No "<<i<<" => Good = "<<goodOut[i]<<" Bad = "<<badOut[i]<<endl;
+    }
+  cout<<"Test MCEE = "<<mcee<<endl<<endl;
 
+  /*
+   * END
+   *
+   * Free all dynamic memory (the object will be destroyed automatically)
+   */
+  cout<<"Ending program..."<<flush;
   delete[] layerSize;
-
   delete[] netOut;
-
   delete[] goodOut;
-
   delete[] badOut;
-
-  for(i=0; i<numRow; i++)
+  for(i=0; i<numRow; ++i)
     {
       delete[] dIn[i];
       delete[] dTarget[i];
     }
   delete[] dIn;
   delete[] dTarget;
-
-
+  cout<<"DONE!"<<endl;
   return 0;
 }
 

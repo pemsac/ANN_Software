@@ -2,17 +2,17 @@
  *
  * Carlos III University of Madrid.
  *
- * Master's Final Thesis: Heartbeats classifier based on ANN (Artificial Neural
+ * Master's Final Thesis: Heart-beats classifier based on ANN (Artificial Neural
  * Network).
  *
  * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
- * Tutor: Luis Mengibar Pozo (Tutor)
+ * Tutor: Luis Mengibar Pozo
  *
  *
- * Feed-forward Artificial Neural Network with sigmoid & softmax activation
- * functions.
+ * Feed-forward Artificial Neural Network with sigmoid activation & softmax
+ * output functions.
  *
  * Header file with the class definition.
  *
@@ -38,19 +38,23 @@ class ANN
 protected:
   /*
    * Private variables:
-   * _WandB:	 weights and bias of each neuron
-   * _uOut:	 output values of each neuron
-   * _numLayer:	 number of layers including input and output layers
-   * _layerSize: number of neurons in each layer.
+   * _WandB:		Weights & Bias Matrix.
+   * _uOut:		Outputs Matrix. Output values of each neuron
+   * _numLayer:		Number of Layers. It includes input and output layers
+   * _layerSize:	Layers Sizes Array. Number of neurons in each layer.
+   * _netOut:		Binary Network Outputs Array. Normalized in binary
    */
   double ***_WandB, **_uOut;
   int _numLayer, *_layerSize, *_netOut;
+
+
 
 public:
   /*
    * Main constructor method.
    *
-   * Create a new ANN introducing weights, number of layers and layers' sizes.
+   * Create a new ANN introducing, number of layers, layers sizes and Weight &
+   * Bias Matrix.
    */
   ANN(int numLayer, int *layerSize, double ***WandB);
 
@@ -60,15 +64,23 @@ public:
   virtual ~ANN();
 
   /*
-   * Feed-forward process.
-   * The neurons have Sigmoid activation functions and Softmax output functions
+   * Feed-forward method.
    *
-   * Check documentation to get more information
+   * There're 4 steps:
+   * 1- Introduce new inputs
+   * 2- Forward-propagation through hidden layers with Sigmoid activation
+   * functions.
+   * 3- Output layer operations with Softmax activation functions.
+   * 4- Apply Winer-Take-All rule to get binary outputs and save them in _netOut
+   *
+   * Check documentation for more information
    */
   void feedforward(double *in);
 
   /*
-   * Getter for network's outputs (outputs of last layer's neurons)
+   * Getter for _netOut.
+   *
+   * Get the binary netnetwork's outputs normalized by Winer-Take-All rule
    */
   void getNetOut(int *out);
 };

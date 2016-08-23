@@ -2,16 +2,17 @@
  *
  * Carlos III University of Madrid.
  *
- * Master's Final Thesis: Heartbeats classifier based on ANN (Artificial Neural
+ * Master's Final Thesis: Heart-beats classifier based on ANN (Artificial Neural
  * Network).
  *
  * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
- * Tutor: Luis Mengibar Pozo (Tutor)
+ * Tutor: Luis Mengibar Pozo
  *
  *
- * Feed-forward Artificial Neural Network.
+ * Feed-forward Artificial Neural Network with sigmoid activation & softmax
+ * output functions.
  *
  * Source code
  *
@@ -25,64 +26,63 @@
 ANN::ANN(int numLayer, int *layerSize, double ***WandB)
 {
   int i, j, k;
+  /*.
+   * Number of Layers data copy
+   */
+  _numLayer=numLayer;
+
   /*
-   * memory allocation and data copy.
+   * Layers Sizes Array memory allocation and data copy
+   */
+  _layerSize=new int[numLayer];
+
+  for(i=0; i<numLayer; ++i)
+    {
+      _layerSize[i]=layerSize[i];
+    }
+
+  /*
+   * Binary Network Outputs Array memory allocation and initialization to 0
+   */
+  _netOut=new int[layerSize[numLayer-1]]();
+
+  /*
+   * Outputs Matrix memory allocation and initialization to 0
+   */
+  _uOut=new double*[numLayer]();
+
+  for(i=0; i<numLayer; ++i)
+    {
+      _uOut[i]=new double[layerSize[i]]();
+    }
+
+  /*
+   * Weights & Bias Matrix memory allocation and data copy
    *
-   * number of layers
+   * Take into account the first layer's neurons (input) doesn't have weights.
+   * Note the neurons have a weight for each previous neuron connected plus its
+   * bias' weight.
    */
-  _numLayer = numLayer;
+  _WandB=new double**[numLayer];
 
-  /*
-   * Layer sizes
-   */
-  _layerSize = new int[numLayer];
-
-  for (i=0; i<numLayer; ++i)
+  for(i=1; i<numLayer; ++i)
     {
-      _layerSize[i] = layerSize[i];
+      _WandB[i]=new double*[layerSize[i]];
     }
-
-  /*
-   * Binary network outputs with Winer-Take-All rule
-   */
-  _netOut = new int[layerSize[numLayer-1]];
-
-  /*
-   * output matrix (only memory allocation)
-   */
-  _uOut = new double*[numLayer];
-
-  for (i=0; i<numLayer; ++i)
+  for(i=1; i<numLayer; ++i)
     {
-      _uOut[i] = new double[layerSize[i]];
-    }
-
-  /*
-   * Weights and bias matrix
-   * Take into account the first layer's neurons (input) don't have weights.
-   * Note the neurons have a weight for each previous neuron connected plus an
-   * extra weight for its bias.
-   */
-  _WandB = new double**[numLayer];
-
-  for (i=1; i<numLayer; ++i)
-    {
-      _WandB[i] = new double*[layerSize[i]];
-    }
-  for (i=1; i<numLayer; ++i)
-    {
-      for (j=0; j<layerSize[i]; ++j)
+      for(j=0; j<layerSize[i]; ++j)
 	{
-	  _WandB[i][j] = new double[layerSize[i-1]+1];
+	  _WandB[i][j]=new double[layerSize[i-1]+1];
 	}
     }
-  for (i=1; i<numLayer; ++i)
+  for(i=1; i<numLayer; ++i)
     {
-      for (j=0; j<layerSize[i]; ++j)
+      for(j=0; j<layerSize[i]; ++j)
 	{
-	  for (k=0; k<layerSize[i-1]+1; ++k)
+	  for(k=0; k<layerSize[i-1]+1; ++k)
 	    {
-	      _WandB[i][j][k] = WandB[i][j][k];
+	      _WandB[i][j][k]=WandB[i][j][k];
 	    }
 	}
     }
@@ -94,9 +94,7 @@ ANN::~ANN()
 {
   int i, j;
   /*
-   * Free all dynamic memory
-   *
-   * weights and bias matrix
+   * Weights & Bias Matrix memory freeing
    */
   for(i=1; i<_numLayer; ++i)
     {
@@ -112,7 +110,7 @@ ANN::~ANN()
   delete[] _WandB;
 
   /*
-   * output matrix
+   * Outputs Matrix memory freeing
    */
   for(i=0; i<_numLayer; ++i)
     {
@@ -121,7 +119,12 @@ ANN::~ANN()
   delete[] _uOut;
 
   /*
-   * layer sizes matrix
+   * Network Outputs Array memory freeing
+   */
+  delete[] _netOut;
+
+  /*
+   * Layers Sizes Array memory freeing
    */
   delete[] _layerSize;
 }
@@ -142,72 +145,74 @@ void ANN::feedforward(double *in)
     }
 
   /*
-   * 2º step: feedforward process in hidden layers.
-   * Get the outputs of each neuron in the hidden layers applying
-   * sigmoid activation function
+   * 2º step: Forward-propagation through hidden layers. Get the outputs of each
+   * neuron in the hidden layers applying SIGMOID activation function
    */
   for(i=1;i<_numLayer;++i)
     {
       for(j=0; j<_layerSize[i]; ++j)
 	{
 	  /*
-	   * Sum all the neuron inputs applying weights
+	   * Sum all the neuron inputs weighted.
 	   */
 	  for(k=0, sum=0.0;k<_layerSize[i-1];++k)
 	    {
-	      sum+= _uOut[i-1][k]*_WandB[i][j][k];
+	      sum+=_uOut[i-1][k]*_WandB[i][j][k];
 	    }
 	  /*
 	   * Apply bias
 	   */
 	  sum+=_WandB[i][j][_layerSize[i-1]];
 	  /*
-	   * SIGMOID activation function
+	   * Get neuron output with SIGMOID activation function
 	   */
 	  _uOut[i][j]=1/(1+exp(-sum));
 	}
     }
 
   /*
-   * 3º step: Calculate Softmax outputs.
+   * 3º step: Calculate outputs. Get the outputs of each neuron in the last
+   * layer applying SOFTMAX activation function.
    */
   for(i=0, sumsoft=0.0; i<_layerSize[_numLayer-1]; ++i)
     {
       /*
-       * Sum all the neuron inputs applying weights
+       * Sum all the neuron inputs weighted.
        */
       for(j=0, sum=0.0; j<_layerSize[_numLayer-2]; ++j)
 	{
-	  sum += _uOut[_numLayer-2][j] * _WandB[_numLayer-1][i][j];
+	  sum+=_uOut[_numLayer-2][j] * _WandB[_numLayer-1][i][j];
 	}
       /*
        * Apply bias
        */
-      sum += _WandB[_numLayer-1][i][_layerSize[_numLayer-2]];
+      sum+=_WandB[_numLayer-1][i][_layerSize[_numLayer-2]];
       /*
-       * SOFTMAX activation function
+       * SOFTMAX activation function 1º step
        */
       _uOut[_numLayer-1][i] = exp(sum);
-      sumsoft += _uOut[_numLayer-1][i];
+      sumsoft+=_uOut[_numLayer-1][i];
     }
   /*
-   * SOFTMAX activation function
+   * SOFTMAX activation function 2º step. Get neurons outputs.
    */
   for(i=0; i<_layerSize[_numLayer-1]; ++i)
     {
-      _uOut[_numLayer-1][i] /= sumsoft;
+      _uOut[_numLayer-1][i]/=sumsoft;
     }
 
   /*
-   * 4º step: Winer-Take-All
-   * The highest network output become 1.
+   * 4º step: get Binary Network Outputs Array applying Winer-Take-All rule.
+   * The highest last layer output become 1.
+   *
+   * Note these outputs are NOT used for training.
    */
   for(i=1, max=0; i<_layerSize[_numLayer-1]; ++i)
     {
       if(_uOut[_numLayer-1][i] > _uOut[_numLayer-1][max])
 	{
 	  _netOut[max]=0;
-	  max = i;
+	  max=i;
 	}
       else
 	{
@@ -223,8 +228,11 @@ void ANN::getNetOut(int *out)
 {
   int i;
 
+  /*
+   * Copy arrays
+   */
   for(i=0; i<_layerSize[_numLayer-1]; ++i)
     {
-      out[i] = _netOut[i];
+      out[i]=_netOut[i];
     }
 }
