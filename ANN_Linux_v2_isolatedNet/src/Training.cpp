@@ -21,12 +21,10 @@
 #include "Training.h"
 
 
-
-Training::Training(int numLayer, int *layerSize, double momentum,
-		   double learnRate) :
-		   ANN(numLayer, layerSize, randWandB(numLayer, layerSize))
+Training::Training(int numLayer, int *layerSize):
+ANN(numLayer, layerSize, randWandB(numLayer, layerSize))
 {
-  int i, j, k;
+  int i, j;
 
   /*
    * Free memory allocated in _randWandB by randWandB function
@@ -38,10 +36,10 @@ Training::Training(int numLayer, int *layerSize, double momentum,
    *
    * Delta error matrix
    */
-  _deltaErr = new double*[numLayer];
+  _grad = new double*[numLayer];
   for(i=1; i<numLayer; ++i)
     {
-      _deltaErr[i] = new double[layerSize[i]];
+      _grad[i] = new double[layerSize[i]];
     }
 
   /*
@@ -50,39 +48,35 @@ Training::Training(int numLayer, int *layerSize, double momentum,
    * Note the neurons have a weight for each previous neuron connected plus an
    * extra weight for its bias.
    */
-  _preWandB = new double**[numLayer];
+  _delta = new double**[numLayer]();
   for(i=1; i<numLayer; ++i)
     {
-      _preWandB[i]=new double*[layerSize[i]];
+      _delta[i]=new double*[layerSize[i]]();
     }
   for(i=1; i<numLayer; ++i)
     {
       for(j=0; j<layerSize[i]; ++j)
 	{
-	  _preWandB[i][j] = new double[layerSize[i-1]+1];
+	  _delta[i][j] = new double[layerSize[i-1]+1]();
 	}
     }
 
   /*
    * Previous weights & bias matrix initialization
    */
-  for(i=1; i<numLayer; ++i)
-    {
-      for(j=0; j<layerSize[i]; ++j)
-	{
-	  for(k=0; k<layerSize[i-1]+1; ++k)
-	    {
-	      _preWandB[i][j][k] = (double)0.0;
-	    }
-	}
-    }
+  //  for(i=1; i<numLayer; ++i)
+  //    {
+  //      for(j=0; j<layerSize[i]; ++j)
+  //	{
+  //	  for(k=0; k<layerSize[i-1]+1; ++k)
+  //	    {
+  //	      _delta[i][j][k] = (double)0.0;
+  //	    }
+  //	}
+  //    }
 
-  /*
-   * Data copy
-   */
-  _learnRate = learnRate;
-
-  _momentum = momentum;
+  _learnRate = START_LEARN_RATE;
+  _momentum = MOMENTUM;
 }
 
 
@@ -106,28 +100,28 @@ Training::~Training ()
     {
       for(j=0; j<_layerSize[i]; ++j)
 	{
-	  delete[] _preWandB[i][j];
+	  delete[] _delta[i][j];
 	}
     }
   for(i=1; i<_numLayer; ++i)
     {
-      delete[] _preWandB[i];
+      delete[] _delta[i];
     }
-  delete[] _preWandB;
+  delete[] _delta;
 
   /*
    * delta errors matrix
    */
   for(i=1; i<_numLayer; ++i)
     {
-      delete[] _deltaErr[i];
+      delete[] _grad[i];
     }
-  delete[] _deltaErr;
+  delete[] _grad;
 }
 
 
 
-void Training::backpropagation(double *in,double *target)
+void Training::backpropagation(double *in, double *target)
 {
   double sum;
   int i, j, k;
@@ -139,13 +133,19 @@ void Training::backpropagation(double *in,double *target)
    *
    */
   //	update output values for each neuron
+
   feedforward(in);
 
   //	find delta for output layer
+  //  for(i=0;i<_layerSize[_numLayer-1];++i)
+  //    {
+  //      _grad[_numLayer-1][i]=_uOut[_numLayer-1][i]*
+  //	  (1-_uOut[_numLayer-1][i])*(target[i]-_uOut[_numLayer-1][i]);
+  //    }
+
   for(i=0;i<_layerSize[_numLayer-1];++i)
     {
-      _deltaErr[_numLayer-1][i]=_out[_numLayer-1][i]*
-	  (1-_out[_numLayer-1][i])*(target[i]-_out[_numLayer-1][i]);
+      _grad[_numLayer-1][i]=(target[i]-_uOut[_numLayer-1][i]);
     }
 
   //	find delta for hidden layers
@@ -153,40 +153,40 @@ void Training::backpropagation(double *in,double *target)
     {
       for( j=0;j<_layerSize[i];++j)
 	{
-	  sum=0.0;
-	  for(k=0;k<_layerSize[i+1];++k)
+
+	  for(k=0, sum=0.0; k<_layerSize[i+1];++k)
 	    {
-	      sum+=_deltaErr[i+1][k]*_WandB[i+1][k][j];
+	      sum+=_grad[i+1][k]*_WandB[i+1][k][j];
 	    }
-	  _deltaErr[i][j]=_out[i][j]*(1-_out[i][j])*sum;
+	  _grad[i][j]=_uOut[i][j]*(1-_uOut[i][j])*sum;
 	}
     }
 
-  //	apply momentum ( does nothing if alpha=0 )
+  //	apply momentum ( does nothing if momentum=0 )
+  for(i=1; i<_numLayer && _momentum>0; ++i)
+    {
+      for(j=0;j<_layerSize[i];++j)
+	{
+	  for(k=0;k<_layerSize[i-1];++k)
+	    {
+	      _WandB[i][j][k]+=_momentum*_delta[i][j][k];
+	    }
+	  _WandB[i][j][_layerSize[i-1]]+=_momentum*_delta[i][j][_layerSize[i-1]];
+	}
+    }
+
+  //	adjust weights
   for(i=1;i<_numLayer;++i)
     {
       for(j=0;j<_layerSize[i];++j)
 	{
 	  for(k=0;k<_layerSize[i-1];++k)
 	    {
-	      _WandB[i][j][k]+=_momentum*_preWandB[i][j][k];
+	      _delta[i][j][k]=_learnRate*_grad[i][j]*_uOut[i-1][k];
+	      _WandB[i][j][k]+=_delta[i][j][k];
 	    }
-	  _WandB[i][j][_layerSize[i-1]]+=_momentum*_preWandB[i][j][_layerSize[i-1]];
-	}
-    }
-
-  //	adjust weights usng steepest descent
-  for(i=1;i<_numLayer;++i)
-    {
-      for(j=0;j<_layerSize[i];++j)
-	{
-	  for(k=0;k<_layerSize[i-1];++k)
-	    {
-	      _preWandB[i][j][k]=_learnRate*_deltaErr[i][j]*_out[i-1][k];
-	      _WandB[i][j][k]+=_preWandB[i][j][k];
-	    }
-	  _preWandB[i][j][_layerSize[i-1]]=_learnRate*_deltaErr[i][j];
-	  _WandB[i][j][_layerSize[i-1]]+=_preWandB[i][j][_layerSize[i-1]];
+	  _delta[i][j][_layerSize[i-1]]=_learnRate*_grad[i][j];
+	  _WandB[i][j][_layerSize[i-1]]+=_delta[i][j][_layerSize[i-1]];
 	}
     }
 }
@@ -216,13 +216,14 @@ double ***Training::randWandB(int numLayer, int *layerSize)
   /*
    * Save random weights to the matrix
    */
+  srand (time(NULL));
   for(i=1; i<numLayer; ++i)
     {
       for(j=0; j<layerSize[i]; ++j)
 	{
 	  for(k=0; k<layerSize[i-1]+1; ++k)
 	    {
-	      _randWandB[i][j][k] = (double)(rand())/(RAND_MAX/2) - 1;
+	      _randWandB[i][j][k] = (double)(rand())/(RAND_MAX) - 0.5;
 	    }
 	}
     }
@@ -232,6 +233,19 @@ double ***Training::randWandB(int numLayer, int *layerSize)
    */
   return _randWandB;
 }
+
+
+//
+//double Training::train(double **in, double **target, int numRowTrain)
+//{
+//  int i;
+//  double mcee;
+//
+//  for(i=0, mcee=0; i<numRowTrain; ++i)
+//    {
+//
+//    }
+//}
 
 
 
@@ -261,7 +275,7 @@ void Training::freeRandWeight(int numLayer, int *layerSize)
 
 
 
-//double Training::squareErr(double *target) const
+//double Training::meanSquErr(double *target) const
 //{
 //  /*
 //   *
@@ -274,18 +288,55 @@ void Training::freeRandWeight(int numLayer, int *layerSize)
 //  int i;
 //  for(i=0;i<_layerSize[_numLayer-1];++i)
 //    {
-//      mse+=(target[i]-_out[_numLayer-1][i])*(target[i]-_out[_numLayer-1][i]);
+//      mse+=(target[i]-_uOut[_numLayer-1][i])*(target[i]-_uOut[_numLayer-1][i]);
 //    }
 //  return mse/2;
 //}
-double Training::netErr(double *target) const
+
+/*
+ *
+ * DEBUG
+ */
+//double Training::netErr(double *target) const
+//{
+//  double err=0.0;
+//  int i;
+//  for(i=0;i<_layerSize[_numLayer-1];++i)
+//    {
+//      err+=abs(target[i]-_uOut[_numLayer-1][i]);
+//    }
+//  return err/_layerSize[_numLayer-1];
+//}
+
+double Training::CEE(double *target)
 {
-  double err=0.0;
+  double err = 0.0;
   int i;
-  for(i=0;i<_layerSize[_numLayer-1];++i)
+  for(i=0; i<_layerSize[_numLayer-1]; ++i)
     {
- //     cout<<"["<<i<<"] => ideal="<<target[i]<<" Output="<<_out[_numLayer-1][i]<<endl;
-      err+=abs(target[i]-_out[_numLayer-1][i]);
+      err += log(_uOut[_numLayer-1][i]) * target[i] * (-1);
     }
   return err/_layerSize[_numLayer-1];
+}
+
+
+
+void Training::updateLRandM(double currMCEE, double lastMCEE)
+{
+  if (currMCEE<lastMCEE)
+    {
+      if(_learnRate<MAX_LEARN_RATE)
+	{
+	  _learnRate*=INCRE_LEARN_RATE;
+	}
+      _momentum=MOMENTUM;
+    }
+  else if (currMCEE>lastMCEE*VARY_RATE)
+    {
+      if(_learnRate>MIN_LEARN_RATE)
+	{
+	  _learnRate*=DECRE_LEARN_RATE;
+	}
+      _momentum=0;
+    }
 }
