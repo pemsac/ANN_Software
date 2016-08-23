@@ -24,9 +24,10 @@
 
 int main(int argc, char* argv[])
 {
-  int i,j, numLayer, *layerSize, numRowTrain, numRowVal, numRowTest, numRow,
-  count, maxInte;
-  double **dIn, **dTarget, err, beta, alpha, thErr;
+  int i,j, k, numLayer, *layerSize, numRowTrain, numRowVal, numRowTest, numRow,
+  ite, maxIte, *netOut, numOut, *goodOut, *badOut;
+  double **dIn, **dTarget, mcee, lastMcee, thMcee, *maxIn, *minIn;
+  bool bad;
   fstream fAnn, fTarget, fIn, fTrain;
 
   /*
@@ -61,10 +62,27 @@ int main(int argc, char* argv[])
 
       layerSize = new int[numLayer];
 
-      for (i=0; i<numLayer; ++i)
+      for (i=0; i<numLayer; i++)
 	{
 	  fAnn>>layerSize[i];
 	}
+
+      numOut = layerSize[numLayer-1];
+
+      netOut = new int[numOut];
+
+      maxIn = new double[layerSize[0]];
+      minIn = new double[layerSize[0]];
+
+      goodOut = new int[numOut]();
+      badOut = new int[numOut]();
+
+      for(i=0; i<layerSize[0]; i++)
+	{
+	  maxIn[i] = CODEC_MIN;
+	  minIn[i] = CODEC_MAX;
+	}
+
       fAnn.close();
   }
   catch (exception &e)
@@ -79,7 +97,7 @@ int main(int argc, char* argv[])
    */
   try
   {
-      fTrain>>beta>>alpha>>thErr>>maxInte>>numRowTrain>>numRowVal>>numRowTest;
+      fTrain>>thMcee>>maxIte>>numRowTrain>>numRowVal>>numRowTest;
       numRow = numRowTrain + numRowVal + numRowTest;
   }
   catch (exception &e)
@@ -90,6 +108,8 @@ int main(int argc, char* argv[])
   }
   fTrain.close();
 
+
+
   /*
    * Load the input data for the network. Get the number of entries and allocate
    * memory
@@ -98,16 +118,25 @@ int main(int argc, char* argv[])
   try
   {
       dIn = new double*[numRow];
-      for(i=0; i<numRow; ++i)
+      for(i=0; i<numRow; i++)
 	{
 	  dIn[i] = new double[layerSize[0]];
 	}
 
-      for(i=0; i<numRow; ++i)
+      for(i=0; i<numRow; i++)
 	{
-	  for(j=0; j<layerSize[0]; ++j)
+	  for(j=0; j<layerSize[0]; j++)
 	    {
 	      fIn>>dIn[i][j];
+
+	      if(dIn[i][j]>maxIn[j])
+		{
+		  maxIn[j] = dIn[i][j];
+		}
+	      if(dIn[i][j]<minIn[j])
+		{
+		  minIn[j] = dIn[i][j];
+		}
 	    }
 	}
       fIn.close();
@@ -127,14 +156,14 @@ int main(int argc, char* argv[])
   try
   {
       dTarget = new double*[numRow];
-      for(i=0; i<numRow; ++i)
+      for(i=0; i<numRow; i++)
 	{
-	  dTarget[i] = new double[layerSize[numLayer-1]];
+	  dTarget[i] = new double[numOut];
 	}
 
-      for(i=0; i<numRow; ++i)
+      for(i=0; i<numRow; i++)
 	{
-	  for(j=0; j<layerSize[numLayer-1]; ++j)
+	  for(j=0; j<numOut; j++)
 	    {
 	      fTarget>>dTarget[i][j];
 	    }
@@ -147,91 +176,121 @@ int main(int argc, char* argv[])
       cerr<<e.what()<<endl<<endl;
       return 1;
   }
+
+  /*
+   * Codify the inputs
+   */
+  cout<<"Coding entries..."<<flush;
+
+  for(i=0; i<layerSize[0]; i++)
+    {
+      double a = (CODEC_MAX-CODEC_MIN)/(maxIn[i]-minIn[i]);
+      double b = CODEC_MIN - a*minIn[i];
+      for(j=0; j<numRow; j++)
+	{
+	  dIn[j][i] = dIn[j][i]*a + b;
+	}
+    }
+  delete[] maxIn;
+  delete[] minIn;
+
   cout<<"OK!"<<endl<<"Now, a new ANN will be trained..."<<endl;
 
   /*
    * Create the Training instance (It will create an own ANN to be trained)
    */
-  Training *trainIns = new Training(numLayer, layerSize, alpha, beta);
+  Training *trainIns = new Training(numLayer, layerSize);
 
   /*
    * Training process:
    */
-  count=0;
+  ite=0;
+  lastMcee=999;
   while(1)
     {
-      count++;
+      ++ite;
       /*
        * Apply blackpropagation for each training sample
        */
-      for (i=0; i<numRowTrain; i++)
+      for(i=0; i<numRowTrain; ++i)
 	{
 	  trainIns->backpropagation(dIn[i], dTarget[i]);
 	}
       /*
        * Calculate the Network Error with the validation samples and print it
        */
-      err=0;
-      for(i=numRowTrain; i<numRowTrain+numRowVal; i++)
+      for(i=numRowTrain, mcee=0; i<numRowTrain+numRowVal; i++)
 	{
 	  trainIns->feedforward(dIn[i]);
-	  err+=trainIns->netErr(dTarget[i]);
+	  mcee+=trainIns->CEE(dTarget[i]);
+	  trainIns->getNetOut(netOut);
 	}
-      err = err/numRowVal;
-      cout<<"MEAN ERROR: "<<err<<endl;
+      mcee /= numRowVal;
+      cout<<"VALIDATION: MCEE = "<<mcee<<endl;
       /*
-       * Check if minimum error or maximum interations are achieved
+       * Check if minimum error or maximum iterations are achieved
        */
-      if(err<=thErr)
+      if(mcee<=thMcee)
 	{
-	  cout<<endl<<"Aim error value achieved with a ";
+	  cout<<"DONE!"<<endl;
 	  break;
 	}
-      if(count>=maxInte)
+      if(ite>=maxIte)
 	{
-	  cout<<endl<<"Max interations exceeded with a ";
+	  cout<<"WARNING Target error wasn't achieved"<<endl;
 	  break;
 	}
+      trainIns->updateLRandM(mcee,lastMcee);
+      lastMcee=mcee;
     }
-  cout<<"validation error of "<<err<<endl;
 
   /*
    * Run a test and print the error gotten
    */
-  cout<<endl<<"TEST RESULT:"<<endl;
-  err=0;
-  count=0;
-  for(i=numRowTrain+numRowVal; i<numRow; i++)
+
+  cout<<endl<<"Testing..."<<endl;
+
+  for(i=numRowTrain+numRowVal, ite=0, mcee=0, k=0; i<numRow; i++)
     {
-      count++;
+      ite++;
       trainIns->feedforward(dIn[i]);
+
       /*
-       * Print the result
+       * Verify the result
        */
-      cout<<"Test No"<<count<<":"<<endl;
-      cout<<"In: [";
-      for(j=0; j<layerSize[0]; j++)
+      trainIns->getNetOut(netOut);
+      for(j=0, bad=false; j<numOut; ++j)
 	{
-	  cout<<" "<<dIn[i][j];
+	  if(netOut[j]!=dTarget[i][j])
+	    {
+	      bad=true;
+	    }
+	  if(dTarget[i][j]==1)
+	    {
+	      k=j;
+	    }
 	}
-      cout<<" ] ==> Out: [";
-      for(j=0; j<layerSize[numLayer-1]; j++)
+      if(bad)
 	{
-	  cout<<" "<<trainIns->getOut(j);
+	  badOut[k]++;
 	}
-      cout<<" ] vs. Real Out: [";
-      for(j=0; j<layerSize[numLayer-1]; j++)
+      else
 	{
-	  cout<<" "<<dTarget[i][j];
+	  goodOut[k]++;
 	}
-      cout<<" ]"<<endl;
+
       /*
        * Sum the error to calculate the mean
        */
-      err+=trainIns->netErr(dTarget[i]);
+      mcee+=trainIns->CEE(dTarget[i]);
     }
-  err = err/numRowTest;
-  cout<<endl<<"TEST DONE with a mean error of "<<err<<endl;
+  mcee = mcee/numRowTest;
+  cout<<"TEST DONE Results:"<<endl;
+  cout<<"MCEE = "<<mcee<<endl;
+  for(i=0; i<numOut; ++i)
+    {
+      cout<<"Outputs "<<i<<" Good = "<<goodOut[i]<<" Bad = "<<badOut[i]<<endl;
+    }
 
   /*
    * Free all dynamic memory
@@ -239,7 +298,13 @@ int main(int argc, char* argv[])
 
   delete[] layerSize;
 
-  for(i=0; i<numRow; ++i)
+  delete[] netOut;
+
+  delete[] goodOut;
+
+  delete[] badOut;
+
+  for(i=0; i<numRow; i++)
     {
       delete[] dIn[i];
       delete[] dTarget[i];

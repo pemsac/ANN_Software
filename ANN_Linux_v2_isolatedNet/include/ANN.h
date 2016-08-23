@@ -39,12 +39,12 @@ protected:
   /*
    * Private variables:
    * _WandB:	 weights and bias of each neuron
-   * _out:	 output values of each neuron
+   * _uOut:	 output values of each neuron
    * _numLayer:	 number of layers including input and output layers
    * _layerSize: number of neurons in each layer.
    */
-  double ***_WandB, **_out;
-  int _numLayer, *_layerSize;
+  double ***_WandB, **_uOut;
+  int _numLayer, *_layerSize, *_netOut;
 
 public:
   /*
@@ -70,7 +70,7 @@ public:
   /*
    * Getter for network's outputs (outputs of last layer's neurons)
    */
-  double getOut(int i) const{return _out[_numLayer-1][i];}
+  void getNetOut(int *out);
 };
 
 #endif

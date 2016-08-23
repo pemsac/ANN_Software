@@ -43,13 +43,18 @@ ANN::ANN(int numLayer, int *layerSize, double ***WandB)
     }
 
   /*
+   * Binary network outputs with Winer-Take-All rule
+   */
+  _netOut = new int[layerSize[numLayer-1]];
+
+  /*
    * output matrix (only memory allocation)
    */
-  _out = new double*[numLayer];
+  _uOut = new double*[numLayer];
 
   for (i=0; i<numLayer; ++i)
     {
-      _out[i] = new double[layerSize[i]];
+      _uOut[i] = new double[layerSize[i]];
     }
 
   /*
@@ -111,9 +116,9 @@ ANN::~ANN()
    */
   for(i=0; i<_numLayer; ++i)
     {
-      delete[] _out[i];
+      delete[] _uOut[i];
     }
-  delete[] _out;
+  delete[] _uOut;
 
   /*
    * layer sizes matrix
@@ -126,32 +131,31 @@ ANN::~ANN()
 void ANN::feedforward(double *in)
 {
   double sum, sumsoft;
-  int i, j, k;
+  int i, j, k, max;
 
   /*
-   * Assign content to input layer
+   * 1º step: Assign content to input layer
    */
   for(i=0;i<_layerSize[0];++i)
     {
-      _out[0][i]=in[i];
+      _uOut[0][i]=in[i];
     }
 
   /*
-   * 1º process: Hidden layers of neurons.
+   * 2º step: feedforward process in hidden layers.
    * Get the outputs of each neuron in the hidden layers applying
    * sigmoid activation function
    */
-  for(i=1;i<_numLayer-1;++i)
+  for(i=1;i<_numLayer;++i)
     {
-      for(j=0;j<_layerSize[i];++j)
+      for(j=0; j<_layerSize[i]; ++j)
 	{
 	  /*
 	   * Sum all the neuron inputs applying weights
 	   */
-	  sum=0.0;
-	  for(k=0;k<_layerSize[i-1];++k)
+	  for(k=0, sum=0.0;k<_layerSize[i-1];++k)
 	    {
-	      sum+= _out[i-1][k]*_WandB[i][j][k];
+	      sum+= _uOut[i-1][k]*_WandB[i][j][k];
 	    }
 	  /*
 	   * Apply bias
@@ -160,24 +164,21 @@ void ANN::feedforward(double *in)
 	  /*
 	   * SIGMOID activation function
 	   */
-	  _out[i][j]=1/(1+exp(-sum));
+	  _uOut[i][j]=1/(1+exp(-sum));
 	}
     }
 
   /*
-   * 2º process: Output layer
-   * Get the outputs of the network applying softmax activation function
+   * 3º step: Calculate Softmax outputs.
    */
-  sumsoft=0.0;
-  for(i=0; i<_layerSize[_numLayer-1]; ++i)
+  for(i=0, sumsoft=0.0; i<_layerSize[_numLayer-1]; ++i)
     {
       /*
        * Sum all the neuron inputs applying weights
        */
-      sum=0.0;
-      for(j=0;j<_layerSize[_numLayer-2];++j)
+      for(j=0, sum=0.0; j<_layerSize[_numLayer-2]; ++j)
 	{
-	  sum += _out[_numLayer-2][j] * _WandB[_numLayer-1][i][j];
+	  sum += _uOut[_numLayer-2][j] * _WandB[_numLayer-1][i][j];
 	}
       /*
        * Apply bias
@@ -186,11 +187,44 @@ void ANN::feedforward(double *in)
       /*
        * SOFTMAX activation function
        */
-      _out[_numLayer-1][i] = exp(sum);
-      sumsoft += _out[_numLayer-1][i];
+      _uOut[_numLayer-1][i] = exp(sum);
+      sumsoft += _uOut[_numLayer-1][i];
     }
+  /*
+   * SOFTMAX activation function
+   */
   for(i=0; i<_layerSize[_numLayer-1]; ++i)
     {
-      _out[_numLayer-1][i] /= sumsoft;
+      _uOut[_numLayer-1][i] /= sumsoft;
+    }
+
+  /*
+   * 4º step: Winer-Take-All
+   * The highest network output become 1.
+   */
+  for(i=1, max=0; i<_layerSize[_numLayer-1]; ++i)
+    {
+      if(_uOut[_numLayer-1][i] > _uOut[_numLayer-1][max])
+	{
+	  _netOut[max]=0;
+	  max = i;
+	}
+      else
+	{
+	  _netOut[i]=0;
+	}
+    }
+  _netOut[max]=1;
+}
+
+
+
+void ANN::getNetOut(int *out)
+{
+  int i;
+
+  for(i=0; i<_layerSize[_numLayer-1]; ++i)
+    {
+      out[i] = _netOut[i];
     }
 }

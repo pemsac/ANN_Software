@@ -8,7 +8,7 @@
  * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
- * Tutor: Luis Mengibar Pozo (Tutor)
+ * Tutor: Luis Mengibar Pozo
  *
  *
  * Back-propagation training for feed-forward ANN with momentum & gradient
@@ -29,11 +29,24 @@
 #define TRAINING_H_
 
 /*
- * Includes
+ * Training parameters
+ */
+#define START_LEARN_RATE		0.1
+#define MIN_LEARN_RATE			0.01
+#define MAX_LEARN_RATE			0.8
+#define INCRE_LEARN_RATE		1.05
+#define DECRE_LEARN_RATE		0.7
+#define VARY_RATE			1.01
+#define MOMENTUM			0.15
+
+/*
+ * Includes & namespace
  */
 #include "ANN.h"
 #include <stdlib.h>
 #include <time.h>
+
+using namespace std;
 
 /*
  * Back-propagation training class derived from ANN class
@@ -45,11 +58,11 @@ private:
    * Private variables:
    * _learnRate:	parameter of gradient descent algorithm
    * _momentum:		parameter to stabilize the training  (optional)
-   * _preWandB:		previous weights & bias of a neuron after adjusting them
-   * _deltaErr:		delta error of each neuron
+   * _delta:		previous weights & bias of a neuron after adjusting them
+   * _grad:		delta error of each neuron
    * _randWandB:	random weights & bias to initialize a new ANN base.
    */
-  double _learnRate, _momentum, ***_preWandB, **_deltaErr, ***_randWandB;
+  double _learnRate, _momentum, ***_delta, **_grad, ***_randWandB;
 
   /*
    * Private function to initialize and return the _randWandB matrix with
@@ -66,6 +79,8 @@ private:
    */
   void freeRandWeight(int numLayer, int *layerSize);
 
+
+
 public:
 
   /*
@@ -78,8 +93,7 @@ public:
    * The training parameters to be introduced are the momentum (optional) and
    * the learning rate.
    */
-  Training(int numLayer, int *layerSize, double momentum,
-	   double learnRate);
+  Training(int numLayer, int *layerSize);
 
   /*
    * Virtual destructor to free all dynamic memory (including ANN base)
@@ -95,13 +109,18 @@ public:
    */
   void backpropagation(double *in,double *target);
 
+//  double validation(double *in, double *target, int numRowVal);
   /*
    * Method to get the current Mean Squared Error
    *
    * *********** LACK OF COMMENTS
    */
   //  double squareErr(double *target) const;
-  double netErr(double *target) const;
+//  double netErr(double *target) const;
+  double CEE(double *target);
+
+  void updateLRandM(double currMCEE, double lastMCEE);
+
 };
 
 #endif
