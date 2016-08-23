@@ -2,16 +2,16 @@
  *
  * Carlos III University of Madrid.
  *
- * Master's Final Thesis: Heartbeats classifier based on ANN (Artificial Neural
+ * Master's Final Thesis: Heart-beats classifier based on ANN (Artificial Neural
  * Network).
  *
  * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
  *
  * Author: Pedro Marcos Solórzano
- * Tutor: Luis Mengibar Pozo (Tutor)
+ * Tutor: Luis Mengibar Pozo
  *
  *
- * Main code to test training and ANN performance
+ * Main code to train, validate and test a feed-forward ANN
  *
  * Source code
  *
