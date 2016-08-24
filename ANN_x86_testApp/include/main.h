@@ -36,10 +36,10 @@ using namespace std;
 /*
  * Files' directories
  */
-#define TARGET_FILE_DIR		"example_4/target.dat"
-#define ANN_FILE_DIR		"example_4/ANN.ann"
-#define TRAIN_FILE_DIR		"example_4/Training.ann"
-#define IN_FILE_DIR		"example_4/input.dat"
+#define TARGET_FILE_DIR		"example_3/target.dat"
+#define ANN_FILE_DIR		"example_3/ANN.ann"
+#define TRAIN_FILE_DIR		"example_3/Training.ann"
+#define IN_FILE_DIR		"example_3/input.dat"
 
 /*
  * Input codify parameters

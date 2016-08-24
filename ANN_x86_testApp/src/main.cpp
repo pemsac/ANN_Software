@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
    * Create the Training instance (It will create an own ANN to be trained)
    */
   cout<<"Training a new feed-forward Neural Network..."<<flush;
-  Training *trainIns = new Training(numLayer, layerSize);
+  Training trainIns(numLayer, layerSize);
 
   /*
    * TRAINING PROCESS:
@@ -321,7 +321,7 @@ int main(int argc, char *argv[])
        */
       for(i=0; i<numRowTrain; ++i)
 	{
-	  trainIns->backpropagation(dIn[i], dTarget[i]);
+	  trainIns.backpropagation(dIn[i], dTarget[i]);
 	}
 
       /*
@@ -332,8 +332,8 @@ int main(int argc, char *argv[])
        */
       for(i=numRowTrain, mcee=0; i<numRowTrain+numRowVal; ++i)
 	{
-	  trainIns->feedforward(dIn[i]);
-	  mcee+=trainIns->CEE(dTarget[i]);
+	  trainIns.feedforward(dIn[i]);
+	  mcee+=trainIns.CEE(dTarget[i]);
 	}
       mcee /= numRowVal;
 
@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
        *
        * If the training runs again, update the Learning Rate and Momentum
        */
-      trainIns->updateLRandM(mcee,lastMcee);
+      trainIns.updateLRandM(mcee,lastMcee);
       lastMcee=mcee;
     }
 
@@ -394,12 +394,12 @@ int main(int argc, char *argv[])
       /*
        * Feed-forward sample
        */
-      trainIns->feedforward(dIn[i]);
+      trainIns.feedforward(dIn[i]);
 
       /*
        * Check the type of output and correctness
        */
-      trainIns->getNetOut(netOut);
+      trainIns.getNetOut(netOut);
       for(j=0, bad=false; j<numOut; ++j)
 	{
 	  if(netOut[j]!=dTarget[i][j])
@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
       /*
        * Calculate MCEE of all the test
        */
-      mcee+=trainIns->CEE(dTarget[i]);
+      mcee+=trainIns.CEE(dTarget[i]);
     }
   mcee = mcee/numRowTest;
 

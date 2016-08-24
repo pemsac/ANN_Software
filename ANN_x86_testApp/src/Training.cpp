@@ -268,6 +268,7 @@ void Training::freeRandWandB(int numLayer, int *layerSize)
 	  delete[] _randWandB[i];
 	}
       delete[] _randWandB;
+      _randWandB=0;
     }
 }
 
