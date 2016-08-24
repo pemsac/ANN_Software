@@ -25,7 +25,7 @@
 int main(int argc, char *argv[])
 {
   int i,j, k, numLayer, *layerSize, numRowTrain, numRowVal, numRowTest, numRow,
-  ite, maxIte, minIte, *netOut, numOut, *goodOut, *badOut;
+  ite, maxIte, minIte, *netOut, numOut, numIn, *goodOut, *badOut;
   double **dIn, **dTarget, mcee, minMcee, lastMcee, thMcee, *maxIn, *minIn;
   bool bad;
   fstream fAnn, fTarget, fIn, fTrain;
@@ -80,9 +80,10 @@ int main(int argc, char *argv[])
 	}
 
       /*
-       * Get number of network outputs
+       * Get number of network outputs & inputs
        */
       numOut = layerSize[numLayer-1];
+      numIn = layerSize[0];
 
       /*
        * Allocate Binary Network Output Array and initialize it to 0
@@ -98,9 +99,9 @@ int main(int argc, char *argv[])
       /*
        * Allocate and initialize input coding variables
        */
-      maxIn = new double[layerSize[0]];
-      minIn = new double[layerSize[0]];
-      for(i=0; i<layerSize[0]; ++i)
+      maxIn = new double[numIn];
+      minIn = new double[numIn];
+      for(i=0; i<numIn; ++i)
 	{
 	  maxIn[i] = CODEC_MIN;
 	  minIn[i] = CODEC_MAX;
@@ -174,7 +175,7 @@ int main(int argc, char *argv[])
       dIn = new double*[numRow];
       for(i=0; i<numRow; ++i)
 	{
-	  dIn[i] = new double[layerSize[0]];
+	  dIn[i] = new double[numIn];
 	}
 
       /*
@@ -182,7 +183,7 @@ int main(int argc, char *argv[])
        */
       for(i=0; i<numRow; ++i)
 	{
-	  for(j=0; j<layerSize[0]; ++j)
+	  for(j=0; j<numIn; ++j)
 	    {
 	      fIn>>dIn[i][j];
 
@@ -260,7 +261,7 @@ int main(int argc, char *argv[])
    * Check documentation for more information
    */
   cout<<"Coding input data..."<<flush;
-  for(i=0; i<layerSize[0]; ++i)
+  for(i=0; i<numIn; ++i)
     {
       /*
        * Calculate Slope
@@ -293,6 +294,11 @@ int main(int argc, char *argv[])
    */
   cout<<"Training a new feed-forward Neural Network..."<<flush;
   Training trainIns(numLayer, layerSize);
+
+  /*
+   * layerSize isn't still useful
+   */
+  delete[] layerSize;
 
   /*
    * TRAINING PROCESS:
@@ -447,7 +453,7 @@ int main(int argc, char *argv[])
    * Free all dynamic memory (the object will be destroyed automatically)
    */
   cout<<"Ending program..."<<flush;
-  delete[] layerSize;
+
   delete[] netOut;
   delete[] goodOut;
   delete[] badOut;
