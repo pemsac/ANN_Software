@@ -25,9 +25,9 @@
 int main(int argc, char *argv[])
 {
   int i,j, k, numLayer, *layerSize, numRowTrain, numRowVal, numRowTest, numRow,
-  ite, maxIte, minIte, *netOut, numOut, numIn, *goodOut, *badOut;
+  ite, maxIte, minIte, numOut, numIn, *goodOut, *badOut, goodOutTotal;
   double **dIn, **dTarget, mcee, minMcee, lastMcee, thMcee, *maxIn, *minIn;
-  bool bad;
+  bool bad, *netOut;
   fstream fAnn, fTarget, fIn, fTrain;
 
 
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
       /*
        * Allocate Binary Network Output Array and initialize it to 0
        */
-      netOut = new int[numOut]();
+      netOut = new bool[numOut]();
 
       /*
        * Allocate and initialize to 0 statistical variables of ANN test
@@ -336,7 +336,8 @@ int main(int argc, char *argv[])
        * Validate the training. Calculate the Mean Cross Entropy Error (MCEE)
        * with some validation samples.
        */
-      for(i=numRowTrain, mcee=0; i<numRowTrain+numRowVal; ++i)
+      mcee=0;
+      for(i=numRowTrain; i<numRowTrain+numRowVal; ++i)
 	{
 	  trainIns.feedforward(dIn[i]);
 	  mcee+=trainIns.CEE(dTarget[i]);
@@ -390,7 +391,11 @@ int main(int argc, char *argv[])
    * TESTING PROCESS
    */
   cout<<"Testing ANN..."<<flush;
-  for(i=numRowTrain+numRowVal, ite=0, mcee=0, k=0; i<numRow; ++i)
+  ite=0;
+  mcee=0;
+  k=0;
+  goodOutTotal=0;
+  for(i=numRowTrain+numRowVal; i<numRow; ++i)
     {
       /*
        * iteration counter
@@ -406,7 +411,9 @@ int main(int argc, char *argv[])
        * Check the type of output and correctness
        */
       trainIns.getNetOut(netOut);
-      for(j=0, bad=false; j<numOut; ++j)
+
+      bad=false;
+      for(j=0; j<numOut; ++j)
 	{
 	  if(netOut[j]!=dTarget[i][j])
 	    {
@@ -423,11 +430,12 @@ int main(int argc, char *argv[])
        */
       if(bad)
 	{
-	  badOut[k]++;
+	  ++badOut[k];
 	}
       else
 	{
-	  goodOut[k]++;
+	  ++goodOut[k];
+	  ++goodOutTotal;
 	}
 
       /*
@@ -440,12 +448,15 @@ int main(int argc, char *argv[])
   /*
    * Print the test results
    */
-  cout<<"DONE!"<<endl<<endl;
+  cout<<"DONE!"<<endl<<endl
+      <<"Results:";
   for(i=0; i<numOut; ++i)
     {
-      cout<<"Results of output No "<<i<<" => Good = "<<goodOut[i]<<" Bad = "<<badOut[i]<<endl;
+      cout<<"Class No "<<i<<" => Good = "<<goodOut[i]<<" Bad = "
+	  <<badOut[i]<<" ("<<goodOut[i]*100/(badOut[i]+goodOut[i])<<"%)"<<endl;
     }
-  cout<<"Test MCEE = "<<mcee<<endl<<endl;
+  cout<<"Test MCEE = "<<mcee<<endl;
+  cout<<"Classification accuracy = "<<goodOutTotal*100/numRowTest<<"%"<<endl<<endl;
 
   /*
    * END

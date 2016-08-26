@@ -44,7 +44,7 @@ ANN::ANN(int numLayer, int *layerSize, double ***WandB)
   /*
    * Binary Network Outputs Array memory allocation and initialization to 0
    */
-  _netOut=new int[layerSize[numLayer-1]]();
+  _netOut=new bool[layerSize[numLayer-1]]();
 
   /*
    * Outputs Matrix memory allocation and initialization to 0
@@ -139,7 +139,7 @@ void ANN::feedforward(double *in)
   /*
    * 1º step: Assign content to input layer
    */
-  for(i=0;i<_layerSize[0];++i)
+  for(i=0; i<_layerSize[0]; ++i)
     {
       _uOut[0][i]=in[i];
     }
@@ -155,7 +155,8 @@ void ANN::feedforward(double *in)
 	  /*
 	   * Sum all the neuron inputs weighted.
 	   */
-	  for(k=0, sum=0.0;k<_layerSize[i-1];++k)
+	  sum=0.0;
+	  for(k=0;k<_layerSize[i-1];++k)
 	    {
 	      sum+=_uOut[i-1][k]*_WandB[i][j][k];
 	    }
@@ -174,12 +175,14 @@ void ANN::feedforward(double *in)
    * 3º step: Calculate outputs. Get the outputs of each neuron in the last
    * layer applying SOFTMAX activation function.
    */
-  for(i=0, sumsoft=0.0; i<_layerSize[_numLayer-1]; ++i)
+  sumsoft=0.0;
+  for(i=0; i<_layerSize[_numLayer-1]; ++i)
     {
       /*
        * Sum all the neuron inputs weighted.
        */
-      for(j=0, sum=0.0; j<_layerSize[_numLayer-2]; ++j)
+      sum=0.0;
+      for(j=0; j<_layerSize[_numLayer-2]; ++j)
 	{
 	  sum+=_uOut[_numLayer-2][j] * _WandB[_numLayer-1][i][j];
 	}
@@ -207,24 +210,25 @@ void ANN::feedforward(double *in)
    *
    * Note these outputs are NOT used for training.
    */
-  for(i=1, max=0; i<_layerSize[_numLayer-1]; ++i)
+  max=0;
+  for(i=1; i<_layerSize[_numLayer-1]; ++i)
     {
       if(_uOut[_numLayer-1][i] > _uOut[_numLayer-1][max])
 	{
-	  _netOut[max]=0;
+	  _netOut[max]=false;
 	  max=i;
 	}
       else
 	{
-	  _netOut[i]=0;
+	  _netOut[i]=false;
 	}
     }
-  _netOut[max]=1;
+  _netOut[max]=true;
 }
 
 
 
-void ANN::getNetOut(int *out)
+void ANN::getNetOut(bool *out)
 {
   int i;
 

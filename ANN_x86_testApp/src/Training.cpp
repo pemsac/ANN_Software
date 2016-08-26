@@ -52,7 +52,7 @@ ANN(numLayer, layerSize, randWandB(numLayer, layerSize))
    * Note the neurons have a weight for each previous neuron connected plus its
    * bias' weight.
    */
-  _delta = new double**[numLayer]();
+  _delta=new double**[numLayer]();
   for(i=1; i<numLayer; ++i)
     {
       _delta[i]=new double*[layerSize[i]]();
@@ -131,7 +131,7 @@ void Training::backpropagation(double *in, double *target)
    *
    * Gradients of the output layer:
    */
-  for(i=0;i<_layerSize[_numLayer-1];++i)
+  for(i=0; i<_layerSize[_numLayer-1]; ++i)
     {
       _grad[_numLayer-1][i]=(target[i]-_uOut[_numLayer-1][i]);
     }
@@ -139,12 +139,12 @@ void Training::backpropagation(double *in, double *target)
   /*
    * Gradients of hidden layers
    */
-  for(i=_numLayer-2;i>0;--i)
+  for(i=_numLayer-2; i>0; i--)
     {
-      for( j=0;j<_layerSize[i];++j)
+      for( j=0;j<_layerSize[i]; ++j)
 	{
-
-	  for(k=0, sum=0.0; k<_layerSize[i+1];++k)
+	  sum=0.0;
+	  for(k=0; k<_layerSize[i+1]; ++k)
 	    {
 	      sum+=_grad[i+1][k]*_WandB[i+1][k][j];
 	    }
@@ -158,9 +158,9 @@ void Training::backpropagation(double *in, double *target)
    */
   for(i=1; i<_numLayer && _momentum>0; ++i)
     {
-      for(j=0;j<_layerSize[i];++j)
+      for(j=0; j<_layerSize[i]; ++j)
 	{
-	  for(k=0;k<_layerSize[i-1];++k)
+	  for(k=0; k<_layerSize[i-1]; ++k)
 	    {
 	      /*
 	       * Calculate momentum from last delta and apply it.
@@ -177,11 +177,11 @@ void Training::backpropagation(double *in, double *target)
   /*
    * 4º and 5 step: Calculate new deltas from gradients and update weights
    */
-  for(i=1;i<_numLayer;++i)
+  for(i=1; i<_numLayer; ++i)
     {
-      for(j=0;j<_layerSize[i];++j)
+      for(j=0; j<_layerSize[i]; ++j)
 	{
-	  for(k=0;k<_layerSize[i-1];++k)
+	  for(k=0; k<_layerSize[i-1]; ++k)
 	    {
 	      /*
 	       * Calculate delta and apply it
