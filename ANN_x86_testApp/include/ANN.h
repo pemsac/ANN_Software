@@ -45,7 +45,8 @@ protected:
    * _netOut:		Binary Network Outputs Array. Normalized in binary
    */
   double ***_WandB, **_uOut;
-  int _numLayer, *_layerSize, *_netOut;
+  int _numLayer, *_layerSize;
+  bool *_netOut;
 
 
 
@@ -82,7 +83,7 @@ public:
    *
    * Get the binary netnetwork's outputs normalized by Winer-Take-All rule
    */
-  void getNetOut(int *out);
+  void getNetOut(bool *out);
 };
 
 #endif
