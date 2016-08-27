@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
   double **dIn, **dTarget, mcee, minMcee, lastMcee, thMcee, *maxIn, *minIn;
   bool bad, *netOut;
   fstream fAnn, fTarget, fIn, fTrain;
+  clock_t time1, time2;
 
 
   /*
@@ -290,9 +291,12 @@ int main(int argc, char *argv[])
   cout<<"DONE!"<<endl;
 
   /*
-   * Create the Training instance (It will create an own ANN to be trained)
+   * Start to measure training time and create the Training instance
+   * (It will create an own ANN to be trained)
+   *
    */
   cout<<"Training a new feed-forward Neural Network..."<<flush;
+  time1 = clock();
   Training trainIns(numLayer, layerSize);
 
   /*
@@ -359,22 +363,25 @@ int main(int argc, char *argv[])
        * Check if minimum MCEE or maximum iterations are achieved and stop
        * training if someone is. Print the result after finishing training.
        *
+       *Stop time if the train is over
        */
       if(mcee<=thMcee)
 	{
-	  cout<<"DONE!"<<endl
-	      <<endl<<"Threshold Mean Cross Entropy Error achieved in "<<ite
-	      <<" iterations"<<endl
-	      <<"Validation MCEE = "<<mcee<<endl<<endl;
+	  time2=clock();
+	  cout<<"DONE!"<<endl<<endl
+	      <<"##  TRAINING RESULTS:"<<endl
+	      <<"# Threshold Mean Cross Entropy Error achieved in "<<ite
+	      <<" iterations"<<endl;
 	  break;
 	}
       if(ite>=maxIte)
 	{
+	  time2=clock();
 	  cout<<"DONE!"<<endl<<endl
-	      <<"WARNING: Threshold Mean Cross Entropy Error not achieved"<<endl
-	      <<"Minimum Validation MCEE found at iteration No "<<minIte
-	      <<" with a value of "<<minMcee<<endl
-	      <<"Validation MCEE = "<<mcee<<endl<<endl;
+	      <<"##  TRAINING RESULTS:"<<endl
+	      <<"# Threshold Mean Cross Entropy Error not achieved"<<endl
+	      <<"# Minimum Validation MCEE found at iteration No "<<minIte
+	      <<" with a value of "<<minMcee<<endl;
 	  break;
 	}
 
@@ -386,11 +393,28 @@ int main(int argc, char *argv[])
       trainIns.updateLRandM(mcee,lastMcee);
       lastMcee=mcee;
     }
-
+  /*
+   * last training information to print
+   */
+  cout<<"# Validation MCEE = "<<mcee<<endl;
+  if((time2-time1)<CLOCKS_PER_SEC)
+    {
+      cout<<"# Training time = "<<(double)(time2-time1)*1000000/CLOCKS_PER_SEC
+	  <<" microsec"<<endl<<endl;
+    }
+  else
+    {
+      cout<<"# Training time = "<<(double)(time2-time1)/CLOCKS_PER_SEC
+	  <<" sec"<<endl<<endl;
+    }
   /*
    * TESTING PROCESS
    */
   cout<<"Testing ANN..."<<flush;
+  /*
+   * Start timing and test
+   */
+  time1 = clock();
   ite=0;
   mcee=0;
   k=0;
@@ -443,20 +467,34 @@ int main(int argc, char *argv[])
        */
       mcee+=trainIns.CEE(dTarget[i]);
     }
+  /*
+   * Finish test
+   */
   mcee = mcee/numRowTest;
+  time2=clock();
 
   /*
    * Print the test results
    */
   cout<<"DONE!"<<endl<<endl
-      <<"Results:";
+      <<"##  TEST RESULTS:"<<endl;
   for(i=0; i<numOut; ++i)
     {
-      cout<<"Class No "<<i<<" => Good = "<<goodOut[i]<<" Bad = "
+      cout<<"# Class No "<<i<<" => Good = "<<goodOut[i]<<" Bad = "
 	  <<badOut[i]<<" ("<<goodOut[i]*100/(badOut[i]+goodOut[i])<<"%)"<<endl;
     }
-  cout<<"Test MCEE = "<<mcee<<endl;
-  cout<<"Classification accuracy = "<<goodOutTotal*100/numRowTest<<"%"<<endl<<endl;
+  cout<<"# Test MCEE = "<<mcee<<endl;
+  cout<<"# Classification accuracy = "<<goodOutTotal*100/numRowTest<<"%"<<endl;
+  if((time2-time1)*1000000<CLOCKS_PER_SEC)
+    {
+      cout<<"# Test time = "<<(double)(time2-time1)*1000000000/CLOCKS_PER_SEC
+	  <<" nanosec."<<endl<<endl;
+    }
+  else
+    {
+      cout<<"# Test time = "<<(double)(time2-time1)*1000000/CLOCKS_PER_SEC
+	  <<" microsec."<<endl<<endl;
+    }
 
   /*
    * END

@@ -45,7 +45,7 @@
  */
 #include "ANN.h"
 #include <stdlib.h>
-#include <time.h>
+#include <ctime>
 
 using namespace std;
 
