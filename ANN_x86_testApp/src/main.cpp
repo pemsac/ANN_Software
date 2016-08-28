@@ -5,13 +5,13 @@
  * Master's Final Thesis: Heart-beats classifier based on ANN (Artificial Neural
  * Network).
  *
- * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
+ * Software implementation in C++ for GNU/Linux x86 platform.
  *
  * Author: Pedro Marcos Solórzano
  * Tutor: Luis Mengibar Pozo
  *
  *
- * Main code to train, validate and test a feed-forward ANN
+ * Main code to train, validate and test some feed-fordware ANN examples.
  *
  * Source code
  *
@@ -31,6 +31,12 @@ int main(int argc, char *argv[])
   fstream fAnn, fTarget, fIn, fTrain;
   clock_t time1, time2;
 
+  /*
+   * Introduction
+   */
+  cout<<endl<<endl<<endl
+      <<"ANN test Application"<<endl
+      <<"####################"<<endl<<endl;
 
   /*
    * Open configuration and data files

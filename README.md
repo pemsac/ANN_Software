@@ -1,20 +1,23 @@
 #Sigmoid-Softmax Feed-forward Artificial Neural Network 
+#for heartbeats classification
 
 ##Carlos III University of Madrid.
 ##
 ##Master's Final Thesis: Heart-beats classifier based on ANN
 ##
-##Software implementation in C++ for x86 platforms
+##ANN Test App implemented in C++ for x86 platforms
 ##
 ##Author: Pedro Marcos Solórzano
 ##Tutor: Luis Mengibar Pozo
 
 
-This software has a configurable Feed-forward Artificial Neural Network with 
-Sigmoid activation & Softmax output functions designed to classify. 
+This software is a configurable Feed-forward Artificial Neural Network (ANN) 
+with Sigmoid activation & Softmax output functions. It's designed to performance 
+classification tasks, such as classification of heatbeats (that's its main 
+application)
 
-This ANN has a gradient descent back-propagation training algorithm based on 
-cross entropy error, with automatic learning rate and momentum adaption.
+The ANN go with a gradient descent back-propagation training algorithm, based on 
+cross entropy error and auto-adaptive learning rates and momentums.
 
 The main code creates, trains, validates and tests some examples of customized
-ANN.
+ANNs.
