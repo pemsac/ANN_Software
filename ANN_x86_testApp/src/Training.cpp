@@ -5,7 +5,7 @@
  * Master's Final Thesis: Heart-beats classifier based on ANN (Artificial Neural
  * Network).
  *
- * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
+ * Software implementation in C++ for GNU/Linux x86 platform.
  *
  * Author: Pedro Marcos Solórzano
  * Tutor: Luis Mengibar Pozo
@@ -13,7 +13,8 @@
  *
  * Gradient Descent Back-propagation based on Cross Entropy Error (CEE).
  * This algorithm is designed to train feed-forward ANN with sigmoid activation
- * and Softmax output functions.
+ * and Softmax output functions. Learning rates and momentums are auto-adapted
+ * during the training.
  *
  * Source file
  *

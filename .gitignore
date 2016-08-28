@@ -17,34 +17,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
-# =========================
-# Operating System Files
-# =========================
-
-# OSX
-# =========================
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Thumbnails
-._*
-
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-
 # Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
 Network Trash Folder
 Temporary Items
-.apdisk
 
 #logs
 *.log
@@ -54,11 +29,10 @@ Temporary Items
 Debug*
 Release*
 bin/
-.metadata/
-.settings/
-.project
-.cproject
 
-#Vivado
-*.cache
-*.runs
+#hiden files
+.*
+
+#except Git files
+!.git
+!.gitignore

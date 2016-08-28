@@ -5,7 +5,7 @@
  * Master's Final Thesis: Heart-beats classifier based on ANN (Artificial Neural
  * Network).
  *
- * Software implementation in C++ for GNU/Linux x86 & Zynq's ARM platforms
+ * Software implementation in C++ for GNU/Linux x86 platform.
  *
  * Author: Pedro Marcos Solórzano
  * Tutor: Luis Mengibar Pozo
