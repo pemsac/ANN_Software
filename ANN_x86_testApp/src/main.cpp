@@ -25,9 +25,9 @@
 int main(int argc, char *argv[])
 {
   int i,j, k, numLayer, *layerSize, numRowTrain, numRowVal, numRowTest, numRow,
-  ite, maxIte, minIte, numOut, numIn, *goodOut, *badOut, goodOutTotal;
+  ite, maxIte, minIte, numOut, numIn, *goodOut, *badOut, goodOutTotal, netOut;
   double **dIn, **dTarget, mcee, minMcee, lastMcee, thMcee, *maxIn, *minIn;
-  bool bad, *netOut;
+  bool bad;
   fstream fAnn, fTarget, fIn, fTrain;
   clock_t time1, time2;
 
@@ -91,11 +91,6 @@ int main(int argc, char *argv[])
        */
       numOut = layerSize[numLayer-1];
       numIn = layerSize[0];
-
-      /*
-       * Allocate Binary Network Output Array and initialize it to 0
-       */
-      netOut = new bool[numOut]();
 
       /*
        * Allocate and initialize to 0 statistical variables of ANN test
@@ -438,20 +433,20 @@ int main(int argc, char *argv[])
       trainIns.feedforward(dIn[i]);
 
       /*
-       * Check the type of output and correctness
+       * Check whether the classification has been correctly done
        */
-      trainIns.getNetOut(netOut);
+      netOut = trainIns.getNetOut();
 
       bad=false;
       for(j=0; j<numOut; ++j)
 	{
-	  if(netOut[j]!=dTarget[i][j])
-	    {
-	      bad=true;
-	    }
-	  if(dTarget[i][j]==1)
+	  if(dTarget[i][j])
 	    {
 	      k=j;
+	      if(netOut!=j)
+		{
+		  bad=true;
+		}
 	    }
 	}
 
@@ -509,7 +504,6 @@ int main(int argc, char *argv[])
    */
   cout<<"Ending program..."<<flush;
 
-  delete[] netOut;
   delete[] goodOut;
   delete[] badOut;
   for(i=0; i<numRow; ++i)
