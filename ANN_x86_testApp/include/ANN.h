@@ -42,11 +42,10 @@ protected:
    * _uOut:		Outputs Matrix. Output values of each neuron
    * _numLayer:		Number of Layers. It includes input and output layers
    * _layerSize:	Layers Sizes Array. Number of neurons in each layer.
-   * _netOut:		Binary Network Outputs Array. Normalized in binary
+   * _netOut:		Final resulting class
    */
   double ***_WandB, **_uOut;
-  int _numLayer, *_layerSize;
-  bool *_netOut;
+  int _numLayer, *_layerSize, _netOut;
 
 
 
@@ -79,11 +78,11 @@ public:
   void feedforward(double *in);
 
   /*
-   * Getter for _netOut.
+   * Getter of _netOut.
    *
-   * Get the binary netnetwork's outputs normalized by Winer-Take-All rule
+   * Get the final output class chosen by the network
    */
-  void getNetOut(bool *out);
+  int getNetOut() const{return _netOut;}
 };
 
 #endif

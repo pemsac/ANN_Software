@@ -42,9 +42,9 @@ ANN::ANN(int numLayer, int *layerSize, double ***WandB)
     }
 
   /*
-   * Binary Network Outputs Array memory allocation and initialization to 0
+   * Initialize the network output to 0
    */
-  _netOut=new bool[layerSize[numLayer-1]]();
+  _netOut=0;
 
   /*
    * Outputs Matrix memory allocation and initialization to 0
@@ -119,11 +119,6 @@ ANN::~ANN()
   delete[] _uOut;
 
   /*
-   * Network Outputs Array memory freeing
-   */
-  delete[] _netOut;
-
-  /*
    * Layers Sizes Array memory freeing
    */
   delete[] _layerSize;
@@ -134,7 +129,7 @@ ANN::~ANN()
 void ANN::feedforward(double *in)
 {
   double sum, sumsoft;
-  int i, j, k, max;
+  int i, j, k;
 
   /*
    * 1º step: Assign content to input layer
@@ -205,38 +200,17 @@ void ANN::feedforward(double *in)
     }
 
   /*
-   * 4º step: get Binary Network Outputs Array applying Winer-Take-All rule.
-   * The highest last layer output become 1.
+   * 4º step: choose the final class applying Winer-Take-All rule.
+   * The highest last layer output will be the resulting class.
    *
-   * Note these outputs are NOT used for training.
+   * Note this output is NOT used for training.
    */
-  max=0;
+  _netOut=0;
   for(i=1; i<_layerSize[_numLayer-1]; ++i)
     {
-      if(_uOut[_numLayer-1][i] > _uOut[_numLayer-1][max])
+      if(_uOut[_numLayer-1][i] > _uOut[_numLayer-1][_netOut])
 	{
-	  _netOut[max]=false;
-	  max=i;
+	  _netOut=i;
 	}
-      else
-	{
-	  _netOut[i]=false;
-	}
-    }
-  _netOut[max]=true;
-}
-
-
-
-void ANN::getNetOut(bool *out)
-{
-  int i;
-
-  /*
-   * Copy arrays
-   */
-  for(i=0; i<_layerSize[_numLayer-1]; ++i)
-    {
-      out[i]=_netOut[i];
     }
 }
